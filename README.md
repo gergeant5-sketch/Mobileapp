@@ -48,7 +48,11 @@ npx eas-cli build --platform android --profile preview
 
 The first build may prompt to create/manage your Android signing credentials. EAS uploads the build and returns a downloadable .apk URL. Open it on your Android phone and install it (allow installs from that source as needed).
 
-**Optional one-click GitHub Actions build:** After linking this Expo project with `eas init` and committing the resulting `extra.eas.projectId` in `app.json`, add a GitHub Actions repository secret named `EXPO_TOKEN` from your Expo account, complete the required credentials setup once interactively, then run the **Build Android APK** workflow manually under GitHub Actions. This uses Expo Cloud, not your Coolify server. The workflow doesn't upload an APK to GitHub itself; the download is provided by Expo.
+### GitHub Actions test APK (without an Expo account)
+
+The workflow **Android test APK (Gradle)** is configured to build a standalone Android APK on GitHub's runner and attach it as the `invoice-maker-android-test-apk` artifact if the Gradle build succeeds. Go to **GitHub → Actions → Android test APK (Gradle) → latest successful run → Artifacts**, download the ZIP, extract the APK, and install it on Android. This build uses a non-store test signing configuration; **do not submit it to Google Play** or use it for production updates. The signing identity may change across runners, so you may have to uninstall the previous test APK first (this deletes offline data).
+
+**Optional Expo EAS build:** After linking this Expo project with `eas init` and committing the resulting `extra.eas.projectId` in `app.json`, add a GitHub Actions repository secret named `EXPO_TOKEN` from your Expo account, complete the required credentials setup once interactively, then run the **Build Android APK** workflow manually under GitHub Actions. This uses Expo Cloud, not your Coolify server. The workflow doesn't upload an APK to GitHub itself; the download is provided by Expo.
 
 ### Play Store and App Store
 The production Android build outputs an AAB for Play Store upload. For iOS run:
@@ -68,6 +72,7 @@ npm run server
 Set the following Coolify environment variables *after publishing*, so the homepage automatically shows download buttons rather than Coming Soon:
 - `APP_STORE_URL`
 - `PLAY_STORE_URL`
+- `APK_DOWNLOAD_URL` — optional, direct stable URL to an Android APK you have securely hosted (not the temporary Actions artifact page)
 
 ## Coolify: exactly two resources
 
