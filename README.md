@@ -72,7 +72,43 @@ npm run server
 Set the following Coolify environment variables *after publishing*, so the homepage automatically shows download buttons rather than Coming Soon:
 - `APP_STORE_URL`
 - `PLAY_STORE_URL`
-- `APK_DOWNLOAD_URL` — optional, direct stable URL to an Android APK you have securely hosted (not the temporary Actions artifact page)
+- `APK_DOWNLOAD_URL` — optional fallback for *external* APK hosting; **not needed** when you mount the APK on your server as described below.
+
+## Host the Android APK on your OWN Coolify server (no Cloudflare R2)
+
+The Next.js website includes a download endpoint: `/api/download/android`. Once you mount an APK file, the landing page displays an **Download Android APK** button automatically. It streams the APK directly from your server, supports range requests, and returns 404 until the file is uploaded.
+
+1. On your **Ubuntu VPS host**, create a folder that survives deployments:
+
+   ```bash
+   sudo mkdir -p /opt/invoice-maker/apk
+   sudo chmod 755 /opt/invoice-maker/apk
+   ```
+
+2. Transfer the existing test APK from your Windows PC with **WinSCP (SFTP)** or `scp` to the VPS. If you log in with a normal (non-root) account, upload to your home directory and move it with `sudo`:
+
+   ```bash
+   sudo mv ~/Invoice-Maker.apk /opt/invoice-maker/apk/Invoice-Maker.apk
+   sudo chmod 644 /opt/invoice-maker/apk/Invoice-Maker.apk
+   ```
+
+   The **filename is case-sensitive** and must match `Invoice-Maker.apk`. Do not upload the ZIP; extract the APK first.
+
+3. In **Coolify → Project → mobile app → Persistent Storage**, add a **directory bind mount**:
+   - Source (host): `/opt/invoice-maker/apk`
+   - Destination (container): `/data/apk`
+
+   Use a **host directory bind mount**, not an anonymous Docker volume. Save and **Deploy** (recreate the container for the mount to take effect).
+
+4. Verify the file exists in the app container using **Coolify → Terminal**:
+
+   ```bash
+   ls -lh /data/apk/Invoice-Maker.apk
+   ```
+
+5. Visit `https://YOUR-DOMAIN/api/download/android` to download. The home page should show **Download Android APK** instead of only **Android — Coming soon**. No `APK_DOWNLOAD_URL` environment variable is required for local hosting.
+
+To upload a new version of the APK, replace the existing `/opt/invoice-maker/apk/Invoice-Maker.apk` host file. App data is not stored there. Test APKs can have different signing keys; do not treat them as stable production releases. Configure a trusted HTTPS domain before sharing the direct link.
 
 ## Coolify: exactly two resources
 
