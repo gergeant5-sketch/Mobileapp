@@ -63,20 +63,29 @@ npx eas-cli build --platform ios --profile production
 
 Apple signing and an Apple Developer account are required for store distribution. Replace the sample `com.example.invoicemaker` bundle/package IDs in `apps/mobile/app.json` with your chosen globally unique IDs before release.
 
+## Automatic Android APK publishing (recommended)
+
+**No manual reupload after changes.** When source files under `apps/mobile/` are pushed to `main`, GitHub Actions builds an Android test APK and uploads it to the existing `preview-latest` GitHub Release. The APK is available at the same stable URL each time:
+
+```
+https://github.com/gergeant5-sketch/Mobileapp/releases/download/preview-latest/Invoice-Maker.apk
+```
+
+The Next.js download page points to that URL automatically. The URL starts working after the initial successful publish. App downloads do not consume your VPS bandwidth or disk. No Coolify persistent storage or APK upload is needed; the existing mount may remain unused. If you prefer a different hosting source later, you can override it with `APK_DOWNLOAD_URL` in Coolify.
+
+**Testing limitation:** The current GitHub Actions Android preview build may use a different signing key each run. As a result, a new APK may not install as an update over the previous one, and uninstalling the old app deletes locally stored invoices. For repeatable in-place upgrades and customer releases, configure a stable private Android signing key (and use a proper production build) before publishing. Do not upload the current test APK to Google Play.
+
 ## Run the download website
 
 ```bash
 npm run server
 ```
 
-Set the following Coolify environment variables *after publishing*, so the homepage automatically shows download buttons rather than Coming Soon:
-- `APP_STORE_URL`
-- `PLAY_STORE_URL`
-- `APK_DOWNLOAD_URL` — optional fallback for *external* APK hosting; **not needed** when you mount the APK on your server as described below.
+Set `APP_STORE_URL` and `PLAY_STORE_URL` once the official store listings are ready. The Android **Test APK** button uses the automated GitHub Release by default. `APK_DOWNLOAD_URL` is an optional override.
 
-## Host the Android APK on your OWN Coolify server (no Cloudflare R2)
+## Optional: Host the Android APK on your OWN Coolify server
 
-The Next.js website includes a download endpoint: `/api/download/android`. Once you mount an APK file, the landing page displays an **Download Android APK** button automatically. It streams the APK directly from your server, supports range requests, and returns 404 until the file is uploaded.
+This method is **optional** if you want the APK bytes on your VPS rather than hosted by GitHub Releases. The Next.js API route `/api/download/android` streams an APK from persistent storage, but you would need to automate copying new builds to the server separately. The recommended workflow above avoids that work.
 
 1. On your **Ubuntu VPS host**, create a folder that survives deployments:
 
@@ -106,7 +115,7 @@ The Next.js website includes a download endpoint: `/api/download/android`. Once 
    ls -lh /data/apk/Invoice-Maker.apk
    ```
 
-5. Visit `https://YOUR-DOMAIN/api/download/android` to download. The home page should show **Download Android APK** instead of only **Android — Coming soon**. No `APK_DOWNLOAD_URL` environment variable is required for local hosting.
+5. Visit `https://YOUR-DOMAIN/api/download/android` to download from your server. To make the homepage use this option instead of GitHub Releases, set `APK_DOWNLOAD_URL=/api/download/android` in Coolify and redeploy.
 
 To upload a new version of the APK, replace the existing `/opt/invoice-maker/apk/Invoice-Maker.apk` host file. App data is not stored there. Test APKs can have different signing keys; do not treat them as stable production releases. Configure a trusted HTTPS domain before sharing the direct link.
 
