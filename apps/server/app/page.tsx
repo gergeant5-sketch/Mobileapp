@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 
 const appStore = process.env.APP_STORE_URL;
 const playStore = process.env.PLAY_STORE_URL;
+const apkDownload = process.env.APK_DOWNLOAD_URL;
 
 export default function HomePage() {
   return (
@@ -18,6 +19,7 @@ export default function HomePage() {
         <div className="actions">
           {appStore ? <a className="primary" href={appStore} rel="noopener noreferrer">Download for iPhone <span>↗</span></a> : <span className="disabled">iPhone — Coming soon</span>}
           {playStore ? <a className="secondary" href={playStore} rel="noopener noreferrer">Get it on Google Play <span>↗</span></a> : <span className="disabled">Android — Coming soon</span>}
+          {apkDownload && <a className="secondary" href={apkDownload} rel="noopener noreferrer">Download Android APK <span>↗</span></a>}
         </div>
         <div className="features">
           <div><strong>01</strong><span>Create and edit invoices</span></div>
