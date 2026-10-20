@@ -1,28 +1,30 @@
 # Invoice Maker — iOS, Android & Coolify
 
-One GitHub repository containing a real Expo mobile invoice maker, and one Next.js server that doubles as the public app-download landing page and API health endpoint.
+One GitHub repository containing a React Native + Expo invoice maker and one Next.js server that doubles as the public app-download landing page and a small API.
 
-## What works in the mobile app
-- Create, edit, duplicate, delete and search invoices
-- Business details and customer details
-- Multiple line items with quantity and unit price
-- Fixed discount, percent tax, automatic totals and four currencies (INR, USD, GBP, EUR)
-- Status: Draft, Unpaid, Paid
-- Save locally to on-device SQLite (works offline, survives app restarts)
-- Generate a PDF and share it from iOS or Android
+## Mobile features
+- Create, edit, duplicate, delete, search and filter invoices
+- Business and customer details; multiple line items with quantities and prices
+- Fixed discount, percentage tax, automatic totals, INR/USD/GBP/EUR
+- Draft, Unpaid and Paid status
+- Invoices stored on device with SQLite; offline and survive app restarts
+- Generate and share a professional invoice PDF on Android or iOS
 
-**Important:** This first version is local-first. Invoices stay on the device, **not** in PostgreSQL. Do not uninstall or clear app data without first exporting PDFs. Account login and encrypted cloud sync will be a separate feature; don't expose any invoice API without authentication.
+**Important:** This first release is **offline-first**. Invoices live on the device, **not** in PostgreSQL. Do not uninstall the app or clear its storage without keeping copies of needed PDFs. Login and authenticated PostgreSQL sync can be added in v2. The server does not receive customer or invoice data.
 
-## Repository
+## Structure
 
 ```text
-apps/mobile/       Expo + React Native app for Android and iOS
-apps/server/       Next.js download page + /api/health + /api/db-health
-packages/shared/   Reserved for future shared client/server models
-Dockerfile         Coolify build from repository root
+apps/mobile/        React Native + Expo iOS and Android
+apps/server/        Next.js download site + /api/health + /api/db-health
+packages/shared/    Future shared types/schemas
+Dockerfile          Coolify server deployment from the monorepo root
+.github/workflows/  Manually triggered Android APK build via EAS
 ```
 
-## Run mobile (Node.js 22.13+)
+## Develop on Windows, macOS or Linux
+
+Install Node.js 22.13 or newer.
 
 ```bash
 git clone https://github.com/gergeant5-sketch/Mobileapp.git
@@ -31,42 +33,52 @@ npm install
 npm run mobile
 ```
 
-Open the QR code in Expo Go (check that your installed Expo Go version supports SDK 57), or create an Expo development build. This is a source-code project, not an already-built IPA/APK. For release builds:
+Expo CLI displays a QR code to try the app on a device using the compatible Expo Go version. Alternatively use an Expo development build. Test and fix the build before store submission.
+
+## Generate an installable APK (Android)
+
+You need an Expo account. In a terminal:
 
 ```bash
 cd apps/mobile
 npx eas-cli login
-npx eas-cli build:configure
-npx eas-cli build --platform android
-npx eas-cli build --platform ios
+npx eas-cli init
+npx eas-cli build --platform android --profile preview
 ```
 
-Change the iOS bundle identifier and Android package name in `apps/mobile/app.json` before production release.
+The first build may prompt to create/manage your Android signing credentials. EAS uploads the build and returns a downloadable .apk URL. Open it on your Android phone and install it (allow installs from that source as needed).
 
-## Run Next.js locally
+**Optional one-click GitHub Actions build:** After linking this Expo project with `eas init` and committing the resulting `extra.eas.projectId` in `app.json`, add a GitHub Actions repository secret named `EXPO_TOKEN` from your Expo account, complete the required credentials setup once interactively, then run the **Build Android APK** workflow manually under GitHub Actions. This uses Expo Cloud, not your Coolify server. The workflow doesn't upload an APK to GitHub itself; the download is provided by Expo.
+
+### Play Store and App Store
+The production Android build outputs an AAB for Play Store upload. For iOS run:
+
+```bash
+npx eas-cli build --platform ios --profile production
+```
+
+Apple signing and an Apple Developer account are required for store distribution. Replace the sample `com.example.invoicemaker` bundle/package IDs in `apps/mobile/app.json` with your chosen globally unique IDs before release.
+
+## Run the download website
 
 ```bash
 npm run server
 ```
 
-The server has a download-only marketing page; links appear only after these environment variables are supplied:
+Set the following Coolify environment variables *after publishing*, so the homepage automatically shows download buttons rather than Coming Soon:
+- `APP_STORE_URL`
+- `PLAY_STORE_URL`
 
-- `NEXT_PUBLIC_APP_STORE_URL` — published App Store listing URL
-- `NEXT_PUBLIC_PLAY_STORE_URL` — published Play Store listing URL
+## Coolify: exactly two resources
 
-`GET /api/health` verifies the HTTP server. `GET /api/db-health` checks the optional PostgreSQL connection, never returns secrets or customer records.
+1. **PostgreSQL** resource: private internal connection, persistent disk and scheduled backups. Not used by invoices until we add authenticated cloud sync.
+2. **Application** resource: same `gergeant5-sketch/Mobileapp` repository, **Build pack: Dockerfile**, **Base Directory: /**, **Dockerfile location: /Dockerfile**, **Port: 3000**; connect your domain over HTTPS.
 
-## Deploy with Coolify — 2 resources
+Set `DATABASE_URL` on the Coolify Application to PostgreSQL's *internal* connection string. Never put a live database password or Expo token into GitHub code or public mobile config.
 
-**Resource 1 — PostgreSQL:** Create a PostgreSQL database inside your Coolify project. Keep its service private (don't publish the database port externally). Enable persistence and scheduled backups.
+`GET /api/health` checks HTTP service, and `GET /api/db-health` checks PostgreSQL access. The latter returns only connected/unavailable; no customer data.
 
-**Resource 2 — Application:** Add this *same* GitHub repository. Use **Dockerfile** build pack, **Base Directory: /** (repository root), **Dockerfile Location: /Dockerfile**, **Port: 3000**. Attach your HTTPS domain, e.g. `invoices.example.com`.
-
-In Coolify set server-only environment variable `DATABASE_URL` to your PostgreSQL's **internal** connection string from Coolify. Optionally set the two `NEXT_PUBLIC_` app-store URLs after publishing. No API keys or database passwords should be committed to GitHub.
-
-PostgreSQL is connected only for a health check in v1. It is **not required to use the offline mobile invoice maker**, and no invoice data is transmitted from the phone. Configure authenticated user accounts and authorization before adding server-side invoice storage.
-
-## Check and build
+### Testing scripts
 
 ```bash
 npm install
@@ -75,6 +87,6 @@ npm run typecheck:server
 npm run build:server
 ```
 
-## Safety & invoicing notes
+## Notes
 
-This is a general invoice generator, not a certified tax/compliance system. Verify tax percentages, invoice numbering, GST/VAT requirements and business details for your jurisdiction. Prices are rounded to two decimal places. PDFs and local invoices may contain personal data; protect the phone and share them only with intended recipients.
+Not a certified tax invoicing system. Validate business identifiers, tax rules, sequential numbering and jurisdiction-specific GST/VAT requirements before issuing official invoices. Local SQLite data is not encrypted by default. Protect the phone and share PDFs only with the intended recipients.

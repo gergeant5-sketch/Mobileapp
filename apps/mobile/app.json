@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Invoice Maker",
+    "slug": "invoice-maker",
+    "scheme": "invoicemaker",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.example.invoicemaker"
+    },
+    "android": {
+      "package": "com.example.invoicemaker",
+      "edgeToEdgeEnabled": true
+    },
+    "plugins": ["expo-sqlite"]
+  }
+}

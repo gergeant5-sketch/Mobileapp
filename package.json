@@ -1,0 +1,14 @@
+{
+  "name": "mobileapp-invoice-maker",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": ["apps/mobile", "apps/server"],
+  "scripts": {
+    "mobile": "npm run start -w apps/mobile",
+    "server": "npm run dev -w apps/server",
+    "build:server": "npm run build -w apps/server",
+    "typecheck:mobile": "npm run typecheck -w apps/mobile",
+    "typecheck:server": "npm run typecheck -w apps/server"
+  },
+  "engines": { "node": ">=22.13.0" }
+}
