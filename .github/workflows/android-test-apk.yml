@@ -8,12 +8,16 @@ on:
       - "apps/mobile/**"
       - ".github/workflows/android-test-apk.yml"
 
+concurrency:
+  group: android-preview-release
+  cancel-in-progress: true
+
 jobs:
   apk:
     runs-on: ubuntu-latest
     timeout-minutes: 45
     permissions:
-      contents: read
+      contents: write
     env:
       CI: "1"
     steps:
@@ -35,10 +39,32 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew assembleRelease --no-daemon
-      - name: Upload test APK
+      - name: Save APK as build artifact
         uses: actions/upload-artifact@v4
         with:
           name: invoice-maker-android-test-apk
           path: apps/mobile/android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 14
+      - name: Prepare permanent APK asset
+        shell: bash
+        run: |
+          set -euo pipefail
+          apk=$(find apps/mobile/android/app/build/outputs/apk/release -maxdepth 1 -name '*.apk' -type f | head -n 1)
+          test -n "$apk"
+          cp "$apk" Invoice-Maker.apk
+      - name: Publish APK at the same GitHub Releases URL
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if gh release view preview-latest >/dev/null 2>&1; then
+            gh release upload preview-latest Invoice-Maker.apk --clobber
+          else
+            gh release create preview-latest Invoice-Maker.apk \
+              --target "$GITHUB_SHA" \
+              --title "Latest Android test APK" \
+              --notes "Automatically built test APK from the main branch. Not for Google Play submission. Testing APKs may use different signing keys between builds." \
+              --prerelease
+          fi
