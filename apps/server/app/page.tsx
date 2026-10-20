@@ -1,10 +1,15 @@
+import { existsSync } from "node:fs";
+
 export const dynamic = "force-dynamic";
 
 const appStore = process.env.APP_STORE_URL;
 const playStore = process.env.PLAY_STORE_URL;
-const apkDownload = process.env.APK_DOWNLOAD_URL;
+const externalApkDownload = process.env.APK_DOWNLOAD_URL;
 
 export default function HomePage() {
+  const apkDownload = existsSync("/data/apk/Invoice-Maker.apk")
+    ? "/api/download/android"
+    : externalApkDownload;
   return (
     <main className="site">
       <div className="shine" aria-hidden="true" />
@@ -18,7 +23,7 @@ export default function HomePage() {
         <p className="lede">Create an invoice in minutes, calculate totals automatically, and share a polished PDF. Works offline on iPhone and Android.</p>
         <div className="actions">
           {appStore ? <a className="primary" href={appStore} rel="noopener noreferrer">Download for iPhone <span>↗</span></a> : <span className="disabled">iPhone — Coming soon</span>}
-          {playStore ? <a className="secondary" href={playStore} rel="noopener noreferrer">Get it on Google Play <span>↗</span></a> : <span className="disabled">Android — Coming soon</span>}
+          {playStore ? <a className="secondary" href={playStore} rel="noopener noreferrer">Get it on Google Play <span>↗</span></a> : !apkDownload ? <span className="disabled">Android — Upload pending</span> : null}
           {apkDownload && <a className="secondary" href={apkDownload} rel="noopener noreferrer">Download Android APK <span>↗</span></a>}
         </div>
         <div className="features">
